@@ -1,5 +1,5 @@
 const showData = function(buildings) {
-  const chartAreaElement = document.querySelector(htmlIDs.chartArea);
+  const chartAreaElement = document.querySelector(htmlIDs.chartData);
   chartAreaElement.innerHTML = createBuildings(buildings);
 };
 
@@ -28,6 +28,9 @@ const drawChart = function(buildings) {
     .attr("width", xScale.bandwidth)
     .attr("height", b => yScale(b.height))
     .attr("fill", "grey");
+
+  const buildingsG = svg.append("g");
+  buildingsG.selectAll()
 };
 
 const drawBuildings = function(buildings) {

@@ -1,3 +1,10 @@
 svg {
   border: 1px solid black;
 }
+
+.row {
+  border: 1px solid black;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
