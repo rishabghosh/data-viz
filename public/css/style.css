@@ -1,5 +1,6 @@
 svg {
   border: 1px solid black;
+  background: antiquewhite;
   display: flex;
   justify-content: space-evenly;
 

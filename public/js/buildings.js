@@ -11,9 +11,9 @@ const drawChart = function(buildings) {
   const rectangles = svg.selectAll("rect").data(buildings);
   const newRectangels = rectangles.enter().append("rect");
 
-  const margin = { left: 100, right: 10, top: 10, bottom: 150 };
-  const width = chartWidth - (margin.left + margin.right);
-  const height = chartHeight - (margin.top + margin.bottom);
+  const axisMargin = { left: 100, right: 10, top: 10, bottom: 150 };
+  const width = chartWidth - (axisMargin.left + axisMargin.right);
+  const height = chartHeight - (axisMargin.top + axisMargin.bottom);
 
   const xScale = d3
     .scaleBand()
@@ -24,18 +24,18 @@ const drawChart = function(buildings) {
   const yScale = d3
     .scaleLinear()
     .domain([0, heightOfTallestBuildings])
-    .range([0, 300]);
+    .range([310, 0]);
 
   newRectangels
-    .attr("y", 0)
-    .attr("x", b => xScale(b.name) + 100)
+    .attr("y", b => yScale(b.height))
+    .attr("x", b => xScale(b.name) + 90)
     .attr("width", xScale.bandwidth)
-    .attr("height", b => yScale(b.height))
+    .attr("height", b => yScale(-30) - yScale(b.height))
     .attr("fill", "grey");
 
   const buildingsG = svg
     .append("g")
-    .attr("transform", `translate(${margin.left} ${margin.top})`);
+    .attr("transform", `translate(${axisMargin.left} ${axisMargin.top})`);
 
   buildingsG
     .append("text")
@@ -59,7 +59,7 @@ const drawChart = function(buildings) {
   buildingsG
     .append("g")
     .attr("class", "x")
-    .attr("transform", `translate (0 , ${height + 62})`)
+    .attr("transform", `translate (-10 , ${height + 70  })`)
     .call(xAxis);
 
   buildingsG
