@@ -95,6 +95,27 @@ const drawChart = function(companies, info) {
     .attr("text-anchor", "end");
 };
 
+const updateCompanies = function(companies, fieldName) {
+  const svg = d3.select("#chart-area svg");
+  svg.select(".y.axis-label").text(fieldName);
+  y = d3
+    .scaleLinear()
+    .domain([_.maxBy(companies, fieldName)[fieldName], 0])
+    .range([0, chartHeight]);
+  const yAxis = d3
+    .axisLeft(y)
+    .tickFormat(d => d)
+    .ticks(4);
+  svg.select(".y.axis").call(yAxis);
+  svg
+    .selectAll("rect")
+    .data(companies)
+    .transition()
+    .duration(1000)
+    .attr("y", c => y(c[fieldName]))
+    .attr("height", c => y(0) - y(c[fieldName]));
+};
+
 const removePreviousData = function() {
   const chartAreaElement = document.querySelector(htmlIDs.chartArea);
   console.log(chartAreaElement);
@@ -102,29 +123,27 @@ const removePreviousData = function() {
     chartAreaElement.innerHTML = "";
   }
 };
-const updateCompanies = function(companies, fieldName) {};
 
 const cycle = function(data, callback, collection) {
-  collection.forEach((info, index) => drawCompanies(data, info, index));
+  collection.forEach((info, index) =>
+    setTimeout(() => {
+      callback(data, info, index);
+    }, 2000 * (index + 1))
+  );
   const totalTimeEachLoop = collection.length * 2000;
   setTimeout(() => {
     cycle(data, callback, collection);
   }, totalTimeEachLoop);
 };
 
-const drawCompanies = function(data, info, index) {
-  setTimeout(() => {
-    removePreviousData();
-    showData(data, info);
-    drawChart(data, info);
-  }, 2000 * (index + 1));
-};
-
 const main = function() {
   d3.csv("data/company.csv").then(d => {
     const allAttributes = Object.keys(d[0]);
     allAttributes.shift();
-    cycle(d, drawCompanies, allAttributes);
+    const firstAttribute = allAttributes.shift();
+    showData(d, firstAttribute);
+    drawChart(d, firstAttribute);
+    cycle(d, updateCompanies, allAttributes);
   });
 };
 
