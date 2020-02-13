@@ -104,17 +104,27 @@ const removePreviousData = function() {
 };
 const updateCompanies = function(companies, fieldName) {};
 
+const cycle = function(data, callback, collection) {
+  collection.forEach((info, index) => drawCompanies(data, info, index));
+  const totalTimeEachLoop = collection.length * 2000;
+  setTimeout(() => {
+    cycle(data, callback, collection);
+  }, totalTimeEachLoop);
+};
+
+const drawCompanies = function(data, info, index) {
+  setTimeout(() => {
+    removePreviousData();
+    showData(data, info);
+    drawChart(data, info);
+  }, 2000 * (index + 1));
+};
+
 const main = function() {
   d3.csv("data/company.csv").then(d => {
     const allAttributes = Object.keys(d[0]);
     allAttributes.shift();
-    allAttributes.forEach((element, index) => {
-      setTimeout(() => {
-        removePreviousData();
-        showData(d, element);
-        drawChart(d, element);
-      }, 2000 * (index + 1));
-    });
+    cycle(d, drawCompanies, allAttributes);
   });
 };
 
