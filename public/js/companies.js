@@ -2,34 +2,48 @@ const chartSize = { width: 800, height: 600 };
 const margin = { left: 100, right: 10, top: 10, bottom: 150 };
 const width = chartSize.width - (margin.left + margin.right);
 const height = chartSize.height - (margin.top + margin.bottom);
+const percentageFormat = d => `${d}%`;
+const kCroresFormat = d => `${d / 1000}k Cr ₹`;
+const rupeesFormat = d => d + " ₹";
+
+const formats = {
+  MarketCap: kCroresFormat,
+  DivYld: percentageFormat,
+  ROCE: percentageFormat,
+  QNetProfit: percentageFormat,
+  QSales: percentageFormat
+};
+
+const drawSvg = function(container, height, width) {
+  return container.attr("width", width).attr("height", height);
+};
 
 const drawCompanies = (companies, field) => {
   const maxHeight = _.maxBy(companies, field)[field];
+  const nameOfCompanies = _.map(companies, "Name");
 
-  const x = d3
+  const xScale = d3
     .scaleBand()
     .range([0, width])
-    .domain(_.map(companies, "Name"))
+    .domain(nameOfCompanies)
     .padding(0.3);
 
-  const y = d3
+  const yScale = d3
     .scaleLinear()
     .domain([0, maxHeight])
     .range([height, 0]);
 
-  const c = d3.scaleOrdinal(d3.schemeDark2);
+  const colourScheme = d3.scaleOrdinal(d3.schemeDark2);
 
   const yAxis = d3
-    .axisLeft(y)
-    .tickFormat(d => d + " ₹")
+    .axisLeft(yScale)
+    .tickFormat(rupeesFormat)
     .ticks(10);
 
-  const xAxis = d3.axisBottom(x);
+  const xAxis = d3.axisBottom(xScale);
 
   const chartArea = d3.select("#chart-area svg");
-  const svg = chartArea
-    .attr("width", chartSize.width)
-    .attr("height", chartSize.height);
+  const svg = drawSvg(chartArea, chartSize.height, chartSize.width);
 
   const g = svg
     .append("g")
@@ -68,51 +82,41 @@ const drawCompanies = (companies, field) => {
   const newReactangles = rectangles
     .enter()
     .append("rect")
-    .attr("y", b => y(b[field]))
-    .attr("x", b => x(b.Name))
-    .attr("width", x.bandwidth)
-    .attr("height", b => y(0) - y(b[field]))
-    .attr("fill", b => c(b.Name));
-};
-
-const percentageFormat = d => `${d}%`;
-const kCroresFormat = d => `${d / 1000}k Cr ₹`;
-
-const formats = {
-  MarketCap: kCroresFormat,
-  DivYld: percentageFormat,
-  ROCE: percentageFormat,
-  QNetProfit: percentageFormat,
-  QSales: percentageFormat
+    .attr("y", companies => yScale(companies[field]))
+    .attr("x", companies => xScale(companies.Name))
+    .attr("width", xScale.bandwidth)
+    .attr("height", companies => yScale(0) - yScale(companies[field]))
+    .attr("fill", companies => colourScheme(companies.Name));
 };
 
 const updateCompanies = function(companies, fieldName) {
   const svg = d3.select("#chart-area svg");
   svg.select(".y.axis-label").text(fieldName);
 
-  const y = d3
+  const yScale = d3
     .scaleLinear()
     .domain([0, _.maxBy(companies, fieldName)[fieldName]])
     .range([height, 0]);
 
   const yAxis = d3
-    .axisLeft(y)
+    .axisLeft(yScale)
     .tickFormat(formats[fieldName])
     .ticks(10);
 
   svg.select(".y-axis").call(yAxis);
+
   svg
     .selectAll("rect")
     .transition()
     .duration(1000)
     .ease(d3.easeLinear)
-    .attr("y", c => y(c[fieldName]))
-    .attr("height", c => y(0) - y(c[fieldName]));
+    .attr("y", companies => yScale(companies[fieldName]))
+    .attr("height", companies => yScale(0) - yScale(companies[fieldName]));
 };
 
 const updateCompaniesBars = companies => {
-  const { Name, ...b } = _.first(companies);
-  const fields = _.keys(b);
+  const { Name, ...details } = _.first(companies);
+  const fields = _.keys(details);
   let field = _.first(fields);
   drawCompanies(companies, field);
 
