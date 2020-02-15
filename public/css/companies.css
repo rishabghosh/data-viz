@@ -3,23 +3,23 @@ body {
 }
 
 svg {
-    border: 1px solid black;
-    background: antiquewhite;
-    display: flex;
-    justify-content: space-evenly;
-  }
-  
-  .row {
-    border: 1px solid black;
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-  }
-  
-  .axis-label {
-    font-size: 20px;
-    text-anchor: middle;
-  }
+  border: 1px solid black;
+  background: antiquewhite;
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.row {
+  border: 1px solid black;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.axis-label {
+  font-size: 20px;
+  text-anchor: middle;
+}
 
 .container {
   height: 100%;
@@ -27,4 +27,3 @@ svg {
   align-items: center;
   /* justify-content: center; */
 }
-  

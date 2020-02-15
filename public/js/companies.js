@@ -41,12 +41,16 @@ const updateChart = (companies, fieldName) => {
     .scaleLinear()
     .domain([0, maxDomain])
     .range([height, 0]);
+
+console.log(fieldName)
+
   svg.select(".y.axis-label").text(fieldName);
 
   const yAxis = d3
     .axisLeft(y)
     .ticks(10)
     .tickFormat(format);
+
   svg.select(".y.axis").call(yAxis);
 
   const x = d3
@@ -103,7 +107,8 @@ const initChart = () => {
   g.append("text")
     .attr("class", "y axis-label")
     .attr("x", -(height / 2))
-    .attr("y", -60);
+    .attr("y", -60)
+    .attr("transform", "rotate(-90)");
 
   g.append("g")
     .attr("class", "x axis")
