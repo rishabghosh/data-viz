@@ -1,150 +1,133 @@
-const toLine = function(company, info) {
-  return `<strong>${company.Name}</strong> <i>${company[info]}</i>`;
-};
+const chartSize = { width: 800, height: 600 };
+const margin = { left: 100, right: 10, top: 10, bottom: 150 };
+const width = chartSize.width - (margin.left + margin.right);
+const height = chartSize.height - (margin.top + margin.bottom);
 
-const createCompanies = function(companies, info) {
-  return companies.map(company => toLine(company, info)).join("<hr/>");
-};
+const drawCompanies = (companies, field) => {
+  const maxHeight = _.maxBy(companies, field)[field];
 
-const getMax = function(companies, info) {
-  return _.maxBy(companies, info)[info];
-};
-
-const drawSvg = function(svgContainer, height, width) {
-  return svgContainer
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
-};
-
-const showData = function(companies, info) {
-  const chartAreaElement = document.querySelector(htmlIDs.chartData);
-  chartAreaElement.innerHTML = createCompanies(companies, info);
-};
-
-const drawChart = function(companies, info) {
-  const nameOfcompanies = companies.map(building => building.Name);
-  const maxBarOnChart = getMax(companies, info);
-  const chartAreaContainer = d3.select(htmlIDs.chartArea);
-  const svg = drawSvg(chartAreaContainer, chartHeight, chartWidth);
-  const rectangles = svg.selectAll("rect").data(companies);
-  const newRectangels = rectangles.enter().append("rect");
-
-  const axisMargin = { left: 100, right: 10, top: 10, bottom: 150 };
-  const width = chartWidth - (axisMargin.left + axisMargin.right);
-  const height = chartHeight - (axisMargin.top + axisMargin.bottom);
-
-  const xScale = d3
+  const x = d3
     .scaleBand()
-    .domain(nameOfcompanies)
-    .range([30, svgWidth])
+    .range([0, width])
+    .domain(_.map(companies, "Name"))
     .padding(0.3);
 
-  const yScale = d3
+  const y = d3
     .scaleLinear()
-    .domain([0, maxBarOnChart])
-    .range([320, 0]);
+    .domain([0, maxHeight])
+    .range([height, 0]);
 
-  newRectangels
-    .attr("y", b => yScale(+b[info]))
-    .attr("x", b => {
-      return xScale(b.Name) + 90;
-    })
-    .attr("width", xScale.bandwidth)
-    .attr("height", b => {
-      const endValue = +b[info];
-      const endYScale = yScale(endValue);
-      const startYScale = yScale(0);
-      const height = startYScale - endYScale;
-      return height;
-    })
-    .attr("fill", "grey");
+  const c = d3.scaleOrdinal(d3.schemeDark2);
 
-  const companiesG = svg
+  const yAxis = d3
+    .axisLeft(y)
+    .tickFormat(d => d + " ₹")
+    .ticks(10);
+
+  const xAxis = d3.axisBottom(x);
+
+  const chartArea = d3.select("#chart-area svg");
+  const svg = chartArea
+    .attr("width", chartSize.width)
+    .attr("height", chartSize.height);
+
+  const g = svg
     .append("g")
-    .attr("transform", `translate(${axisMargin.left} ${axisMargin.top})`);
+    .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-  companiesG
-    .append("text")
+  g.append("text")
     .attr("class", "x axis-label")
-    .attr("x", width / 3)
+    .attr("x", width / 2)
     .attr("y", height + 140)
-    .text("companies");
+    .text("Companies");
 
-  const yAxis = d3.axisLeft(yScale);
-  const xAxis = d3.axisBottom(xScale);
-
-  companiesG
-    .append("text")
+  g.append("text")
     .attr("class", "y axis-label")
-    .attr("x", -150)
-    .attr("y", -40)
-    .attr("transform", `rotate (-90)`)
-    .text(info);
+    .attr("x", -height / 2)
+    .attr("y", -60)
+    .text(field)
+    .attr("transform", "rotate (-90)");
 
-  companiesG.append("g").call(yAxis);
-  companiesG
-    .append("g")
-    .attr("class", "x")
-    .attr("transform", `translate (-10 , ${height + 70})`)
-    .call(xAxis);
+  g.append("g")
+    .attr("class", "y-axis")
+    .call(yAxis);
 
-  companiesG
-    .selectAll(".x text")
-    .attr("transform", `rotate (-40)`)
+  g.append("g")
+    .attr("class", "x-axis")
+    .call(xAxis)
+    .attr("transform", `translate (0, ${height})`);
+
+  g.selectAll(".x-axis text")
+    .attr("transform", "rotate (-40)")
+    .attr("x", -5)
+    .attr("y", 10)
     .attr("text-anchor", "end");
+
+  const rectangles = g.selectAll("rect").data(companies);
+
+  const newReactangles = rectangles
+    .enter()
+    .append("rect")
+    .attr("y", b => y(b[field]))
+    .attr("x", b => x(b.Name))
+    .attr("width", x.bandwidth)
+    .attr("height", b => y(0) - y(b[field]))
+    .attr("fill", b => c(b.Name));
+};
+
+const percentageFormat = d => `${d}%`;
+const kCroresFormat = d => `${d / 1000}k Cr ₹`;
+
+const formats = {
+  MarketCap: kCroresFormat,
+  DivYld: percentageFormat,
+  ROCE: percentageFormat,
+  QNetProfit: percentageFormat,
+  QSales: percentageFormat
 };
 
 const updateCompanies = function(companies, fieldName) {
   const svg = d3.select("#chart-area svg");
   svg.select(".y.axis-label").text(fieldName);
-  y = d3
+
+  const y = d3
     .scaleLinear()
-    .domain([_.maxBy(companies, fieldName)[fieldName], 0])
-    .range([0, chartHeight]);
+    .domain([0, _.maxBy(companies, fieldName)[fieldName]])
+    .range([height, 0]);
+
   const yAxis = d3
     .axisLeft(y)
-    .tickFormat(d => d)
-    .ticks(4);
-  svg.select(".y.axis").call(yAxis);
+    .tickFormat(formats[fieldName])
+    .ticks(10);
+
+  svg.select(".y-axis").call(yAxis);
   svg
     .selectAll("rect")
-    .data(companies)
     .transition()
     .duration(1000)
+    .ease(d3.easeLinear)
     .attr("y", c => y(c[fieldName]))
     .attr("height", c => y(0) - y(c[fieldName]));
 };
 
-const removePreviousData = function() {
-  const chartAreaElement = document.querySelector(htmlIDs.chartArea);
-  console.log(chartAreaElement);
-  if (chartAreaElement !== null) {
-    chartAreaElement.innerHTML = "";
-  }
+const updateCompaniesBars = companies => {
+  const { Name, ...b } = _.first(companies);
+  const fields = _.keys(b);
+  let field = _.first(fields);
+  drawCompanies(companies, field);
+
+  setInterval(() => {
+    fields.push(fields.shift());
+    field = _.first(fields);
+    updateCompanies(companies, field);
+  }, 2000);
 };
 
-const cycle = function(data, callback, collection) {
-  collection.forEach((info, index) =>
-    setTimeout(() => {
-      callback(data, info, index);
-    }, 2000 * (index + 1))
-  );
-  const totalTimeEachLoop = collection.length * 2000;
-  setTimeout(() => {
-    cycle(data, callback, collection);
-  }, totalTimeEachLoop);
-};
-
-const main = function() {
-  d3.csv("data/company.csv").then(d => {
-    const allAttributes = Object.keys(d[0]);
-    allAttributes.shift();
-    const firstAttribute = allAttributes.shift();
-    showData(d, firstAttribute);
-    drawChart(d, firstAttribute);
-    cycle(d, updateCompanies, allAttributes);
-  });
+const main = () => {
+  d3.csv("data/company.csv", ({ Name, ...rest }) => {
+    Object.keys(rest).forEach(c => (rest[c] = +rest[c]));
+    return { Name, ...rest };
+  }).then(updateCompaniesBars);
 };
 
 window.onload = main;
