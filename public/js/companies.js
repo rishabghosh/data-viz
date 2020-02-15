@@ -18,6 +18,12 @@ const fieldFormat = {
 
 const getNameOfCompanies = companies => companies.Name;
 
+const getRestOfTheFields = companies => {
+  const { Name, ...rest } = _.first(companies);
+  const fields = _.keys(rest);
+  return fields;
+};
+
 const slow = () =>
   d3
     .transition()
@@ -25,7 +31,6 @@ const slow = () =>
     .ease(d3.easeLinear);
 
 const color = d3.scaleOrdinal(d3.schemeCategory10);
-
 
 const updateChart = (companies, fieldName) => {
   const format = fieldFormat[fieldName];
@@ -79,13 +84,12 @@ const updateChart = (companies, fieldName) => {
     .attr("width", x.bandwidth);
 };
 
-
 const initChart = () => {
   const svg = d3
     .select("#chart-area svg")
     .attr("height", chartSize.height)
     .attr("width", chartSize.width);
-    
+
   const g = svg
     .append("g")
     .attr("class", "companies")
@@ -108,19 +112,10 @@ const initChart = () => {
   g.append("g").attr("class", "y axis");
 };
 
-
 const parseCompany = ({ Name, ...rest }) => {
   _.forEach(rest, (v, k) => (rest[k] = +v));
   return { Name, ...rest };
 };
-
-
-const nextName = (() => {
-  let step = 0;
-  const names = "CMP,PE,MarketCap,DivYld,QNetProfit,QSales,ROCE".split(",");
-  return () => names[step++ % names.length];
-})();
-
 
 const frequentlyMoveCompanies = (src, dest) => {
   setInterval(() => {
@@ -130,18 +125,21 @@ const frequentlyMoveCompanies = (src, dest) => {
   }, 2000);
 };
 
-
 const startVisualization = companies => {
+  const fields = getRestOfTheFields(companies);
+  const nextName = (() => {
+    let step = 0;
+    return () => fields[step++ % fields.length];
+  })();
+
   initChart();
   updateChart(companies, nextName());
   setInterval(() => updateChart(companies, nextName()), 1000);
   frequentlyMoveCompanies(companies, []);
 };
 
-
 const main = () => {
   d3.csv("data/companies.csv", parseCompany).then(startVisualization);
 };
-
 
 window.onload = main;
