@@ -28,21 +28,13 @@ const formatCSV = function(data) {
   };
 };
 
-const getNameOfCompanies = companies => companies.Name;
-
-// const getRestOfTheFields = companies => {
-//   const { Name, ...rest } = _.first(companies);
-//   const fields = _.keys(rest);
-//   return fields;
-// };
+const getCloseData = companies => companies.Close;
 
 const slow = () =>
   d3
     .transition()
     .duration(500)
     .ease(d3.easeLinear);
-
-// const color = d3.scaleOrdinal(d3.schemeCategory10);
 
 const updateChart = (quotes, fieldName) => {
   const format = fieldFormat[fieldName];
@@ -80,26 +72,19 @@ const updateChart = (quotes, fieldName) => {
     .transition(slow())
     .call(xAxis);
 
-  const companiesG = svg.select(".companies");
+  const lines = d3
+    .line()
+    .x(quotes => x(new Date(quotes.Date)))
+    .y(quotes => y(quotes[fieldName]));
 
-  //   const rects = companiesG
-  //     .selectAll("rect")
-  //     .data(companies, getNameOfCompanies);
-
-  //   rects.exit().remove();
-
-  //   rects
-  //     .enter()
-  //     .append("rect")
-  //     .attr("fill", b => color(b.Name))
-  //     .attr("y", y(0))
-  //     .attr("x", c => x(c.Name))
-  //     .merge(rects)
-  //     .transition(slow())
-  //     .attr("height", b => y(0) - y(b[fieldName]))
-  //     .attr("y", b => y(b[fieldName]))
-  //     .attr("x", b => x(b.Name))
-  //     .attr("width", x.bandwidth);
+  const quotesG = svg.select(".companies");
+  quotesG
+    .append("path")
+    .attr("class", "close")
+    .attr("d", lines(quotes))
+    .attr("fill", "none")
+    .attr("stroke", "blue")
+    .attr("stroke-width", "1px");
 };
 
 const initChart = () => {
@@ -136,26 +121,25 @@ const parseCompany = ({ Date, Volume, AdjClose, ...rest }) => {
   return { Date, ...rest };
 };
 
-// const frequentlyMoveCompanies = (src, dest) => {
-//   setInterval(() => {
-//     const c = src.shift();
-//     if (c) dest.push(c);
-//     else [src, dest] = [dest, src];
-//   }, 2000);
-// };
+const frequentlyMoveCompanies = (src, dest) => {
+  setInterval(() => {
+    const c = src.shift();
+    if (c) dest.push(c);
+    else [src, dest] = [dest, src];
+  }, 2000);
+};
 
-// const startVisualization = companies => {
-//   const fields = getRestOfTheFields(companies);
-//   const nextName = (() => {
-//     let step = 0;
-//     return () => fields[step++ % fields.length];
-//   })();
+const startVisualization = quotes => {
+  const nextName = (() => {
+    let step = 0;
+    return () => quotes[step++ % quotes.length];
+  })();
 
-//   initChart();
-//   updateChart(companies, nextName());
-//   setInterval(() => updateChart(companies, nextName()), 1000);
-//   frequentlyMoveCompanies(companies, []);
-// };
+  initChart();
+  updateChart(quotes, nextName());
+  setInterval(() => updateChart(quotes, nextName()), 1000);
+  frequentlyMoveCompanies(quotes, []);
+};
 
 const main = () => {
   d3.csv("data/nifty_50.csv", parseCompany).then(data => {

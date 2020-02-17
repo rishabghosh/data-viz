@@ -70,7 +70,7 @@ console.log(fieldName)
 
   const rects = companiesG
     .selectAll("rect")
-    .data(companies, getNameOfCompanies);
+    .data(companies, getCloseData);
 
   rects.exit().remove();
 
