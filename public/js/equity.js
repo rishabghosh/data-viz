@@ -28,6 +28,38 @@ const formatCSV = function(data) {
   };
 };
 
+const calculateAvg = numList => {
+  const sum = numList.reduce((acc, val) => acc + val, 0);
+  const avg = sum / numList.length;
+  return avg;
+};
+
+const calculateSME = (quotes, index, sizeOfSlice) => {
+  const start = index - sizeOfSlice + 1;
+  const end = start + sizeOfSlice;
+  const requiredPortion = quotes.slice(start, end);
+  const closes = requiredPortion.map(q => q.Close);
+  const avg = _.round(calculateAvg(closes));
+  return avg;
+};
+
+const getOrDefaultSME = (quotes, currentQuote, index, sizeOfSlice) => {
+  if (index < sizeOfSlice) {
+    currentQuote.SME = 0;
+  } else {
+    currentQuote.SME = calculateSME(quotes, index, sizeOfSlice);
+  }
+  return currentQuote;
+};
+
+const insertSME = quotes => {
+  const sizeOfSlice = 100;
+  const newQuotes = quotes.map((quote, index) =>
+    getOrDefaultSME(quotes, quote, index, sizeOfSlice)
+  );
+  return newQuotes;
+};
+
 const getCloseData = companies => companies.Close;
 
 const slow = () =>
@@ -37,14 +69,12 @@ const slow = () =>
     .ease(d3.easeLinear);
 
 const updateChart = (quotes, fieldName) => {
+  const quotesWithSME = insertSME(quotes);
   const format = fieldFormat[fieldName];
   const svg = d3.select("#chart-area svg");
-  const maxDomain = _.get(_.maxBy(quotes, fieldName), fieldName, 0);
-
-  const dates = quotes.map(data => data.Date);
-
-  const firstDate = new Date(_.first(quotes).Date);
-  const lastDate = new Date(_.last(quotes).Date);
+  const maxDomain = _.get(_.maxBy(quotesWithSME, fieldName), fieldName, 0);
+  const firstDate = new Date(_.first(quotesWithSME).Date);
+  const lastDate = new Date(_.last(quotesWithSME).Date);
 
   const y = d3
     .scaleLinear()
@@ -72,18 +102,32 @@ const updateChart = (quotes, fieldName) => {
     .transition(slow())
     .call(xAxis);
 
-  const lines = d3
+  const lineChart = d3
     .line()
     .x(quotes => x(new Date(quotes.Date)))
     .y(quotes => y(quotes[fieldName]));
 
   const quotesG = svg.select(".companies");
+
   quotesG
     .append("path")
     .attr("class", "close")
-    .attr("d", lines(quotes))
+    .attr("d", lineChart(quotesWithSME))
     .attr("fill", "none")
     .attr("stroke", "blue")
+    .attr("stroke-width", "1px");
+
+  const avgChart = d3
+    .line()
+    .x(quote => x(new Date(quote.Date)))
+    .y(quote => y(quote.SME));
+
+  quotesG
+    .append("path")
+    .attr("class", "close-avg")
+    .attr("d", avgChart(quotesWithSME))
+    .attr("fill", "none")
+    .attr("stroke", "black")
     .attr("stroke-width", "1px");
 };
 

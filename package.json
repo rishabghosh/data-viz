@@ -1,0 +1,23 @@
+{
+  "name": "dataViz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rishabghosh/data-viz.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rishabghosh/data-viz/issues"
+  },
+  "homepage": "https://github.com/rishabghosh/data-viz#readme",
+  "prettier" : {
+    "semi": true
+  }
+}
