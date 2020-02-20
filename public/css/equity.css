@@ -1,0 +1,11 @@
+.close {
+  fill: none;
+  stroke: blue;
+  stroke-width: 2px;
+}
+
+.close-avg {
+  fill: none;
+  stroke: black;
+  stroke-width: 1px;
+}

@@ -1,58 +1,37 @@
-const chartSize = { width: 800, height: 600 };
-const margin = { left: 100, right: 10, top: 20, bottom: 150 };
-const width = chartSize.width - margin.left - margin.right;
-const height = chartSize.height - margin.top - margin.bottom;
-
-const Rs = d => `${d} ₹`;
-const kCrRs = d => `${d / 1000}k Cr ₹`;
-const Percent = d => `${d}%`;
-
-const fieldFormat = {
-  CMP: Rs,
-  MarketCap: kCrRs,
-  DivYld: Percent,
-  ROCE: Percent,
-  QNetProfit: kCrRs,
-  QSales: kCrRs
-};
-
-const calculateAvg = numList => {
-  const sum = numList.reduce((acc, val) => acc + val, 0);
-  const avg = sum / numList.length;
-  return avg;
-};
-
-const calculateSME = (quotes, index, sizeOfSlice) => {
-  const start = index - sizeOfSlice + 1;
-  const end = start + sizeOfSlice;
-  const requiredPortion = quotes.slice(start, end);
-  const closes = requiredPortion.map(q => q.Close);
-  const avg = _.round(calculateAvg(closes));
-  return avg;
-};
-
-const getOrDefaultSME = (quotes, currentQuote, index, sizeOfSlice) => {
-  if (index < sizeOfSlice) {
-    currentQuote.SME = 0;
-  } else {
-    currentQuote.SME = calculateSME(quotes, index, sizeOfSlice);
-  }
-  return currentQuote;
-};
-
-const insertSME = quotes => {
-  const sizeOfSlice = 100;
-  const newQuotes = quotes.map((quote, index) =>
-    getOrDefaultSME(quotes, quote, index, sizeOfSlice)
-  );
-  return newQuotes;
-};
-
 const slow = () =>
   d3
     .transition()
     .duration(500)
     .ease(d3.easeLinear);
+
+const initChart = () => {
+  const svg = d3
+    .select("#chart-area svg")
+    .attr("height", chartSize.height)
+    .attr("width", chartSize.width);
+
+  const g = svg
+    .append("g")
+    .attr("class", "equities")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  g.append("text")
+    .attr("class", "x axis-label")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom - margin.top);
+
+  g.append("text")
+    .attr("class", "y axis-label")
+    .attr("x", -(height / 2))
+    .attr("y", -60)
+    .attr("transform", "rotate(-90)");
+
+  g.append("g")
+    .attr("class", "x axis")
+    .attr("transform", `translate(0,${height})`);
+
+  g.append("g").attr("class", "y axis");
+};
 
 const updateChart = (quotes, fieldName) => {
   const format = fieldFormat[fieldName];
@@ -89,18 +68,15 @@ const updateChart = (quotes, fieldName) => {
 
   const lineChart = d3
     .line()
-    .x(quotes => x(new Date(quotes.Date)))
-    .y(quotes => y(quotes[fieldName]));
+    .x(quote => x(new Date(quote.Date)))
+    .y(quote => y(quote[fieldName]));
 
-  const quotesG = svg.select(".companies");
+  const quotesG = svg.select(".equities");
 
   quotesG
     .append("path")
     .attr("class", "close")
-    .attr("d", lineChart(quotes))
-    .attr("fill", "none")
-    .attr("stroke", "blue")
-    .attr("stroke-width", "1px");
+    .attr("d", lineChart(quotes));
 
   const avgChart = d3
     .line()
@@ -110,39 +86,7 @@ const updateChart = (quotes, fieldName) => {
   quotesG
     .append("path")
     .attr("class", "close-avg")
-    .attr("d", avgChart(quotes))
-    .attr("fill", "none")
-    .attr("stroke", "black")
-    .attr("stroke-width", "1px");
-};
-
-const initChart = () => {
-  const svg = d3
-    .select("#chart-area svg")
-    .attr("height", chartSize.height)
-    .attr("width", chartSize.width);
-
-  const g = svg
-    .append("g")
-    .attr("class", "companies")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-  g.append("text")
-    .attr("class", "x axis-label")
-    .attr("x", width / 2)
-    .attr("y", height + margin.bottom - margin.top);
-
-  g.append("text")
-    .attr("class", "y axis-label")
-    .attr("x", -(height / 2))
-    .attr("y", -60)
-    .attr("transform", "rotate(-90)");
-
-  g.append("g")
-    .attr("class", "x axis")
-    .attr("transform", `translate(0,${height})`);
-
-  g.append("g").attr("class", "y axis");
+    .attr("d", avgChart(quotes));
 };
 
 const drawSlider = () => {
@@ -153,18 +97,16 @@ const drawSlider = () => {
   });
 };
 
-const parse = ({ Date, Volume, AdjClose, ...rest }) => {
-  _.forEach(rest, (v, k) => (rest[k] = +v));
-  return { Date, ...rest };
+const startVisualization = quotes => {
+  initChart();
+  updateChart(quotes, "Close");
+  drawSlider();
 };
 
 const main = () => {
-  d3.csv("data/nifty_50.csv", parse).then(data => {
-    initChart();
-    const quotes = insertSME(data);
-    updateChart(quotes, "Close");
-    drawSlider();
-  });
+  d3.csv("data/nifty_50.csv", parse)
+    .then(data => insertSME(data))
+    .then(quotes => startVisualization(quotes));
 };
 
 window.onload = main;
