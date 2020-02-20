@@ -16,18 +16,6 @@ const fieldFormat = {
   QSales: kCrRs
 };
 
-const formatCSV = function(data) {
-  const format = {
-    Date: "date",
-    Open: "open",
-    High: "high",
-    Low: "low",
-    Close: "close",
-    AdjClose: "adjClose",
-    Volume: "volume"
-  };
-};
-
 const calculateAvg = numList => {
   const sum = numList.reduce((acc, val) => acc + val, 0);
   const avg = sum / numList.length;
@@ -60,8 +48,6 @@ const insertSME = quotes => {
   return newQuotes;
 };
 
-const getCloseData = companies => companies.Close;
-
 const slow = () =>
   d3
     .transition()
@@ -69,12 +55,11 @@ const slow = () =>
     .ease(d3.easeLinear);
 
 const updateChart = (quotes, fieldName) => {
-  const quotesWithSME = insertSME(quotes);
   const format = fieldFormat[fieldName];
   const svg = d3.select("#chart-area svg");
-  const maxDomain = _.get(_.maxBy(quotesWithSME, fieldName), fieldName, 0);
-  const firstDate = new Date(_.first(quotesWithSME).Date);
-  const lastDate = new Date(_.last(quotesWithSME).Date);
+  const maxDomain = _.get(_.maxBy(quotes, fieldName), fieldName, 0);
+  const firstDate = new Date(_.first(quotes).Date);
+  const lastDate = new Date(_.last(quotes).Date);
 
   const y = d3
     .scaleLinear()
@@ -112,7 +97,7 @@ const updateChart = (quotes, fieldName) => {
   quotesG
     .append("path")
     .attr("class", "close")
-    .attr("d", lineChart(quotesWithSME))
+    .attr("d", lineChart(quotes))
     .attr("fill", "none")
     .attr("stroke", "blue")
     .attr("stroke-width", "1px");
@@ -125,7 +110,7 @@ const updateChart = (quotes, fieldName) => {
   quotesG
     .append("path")
     .attr("class", "close-avg")
-    .attr("d", avgChart(quotesWithSME))
+    .attr("d", avgChart(quotes))
     .attr("fill", "none")
     .attr("stroke", "black")
     .attr("stroke-width", "1px");
@@ -160,35 +145,25 @@ const initChart = () => {
   g.append("g").attr("class", "y axis");
 };
 
-const parseCompany = ({ Date, Volume, AdjClose, ...rest }) => {
+const drawSlider = () => {
+  const slider = createD3RangeSlider(0, 100, "#slider-container");
+  slider.range(1, 100);
+  slider.onChange(function(newRange) {
+    d3.select("#range-label").text(newRange.begin + " - " + newRange.end);
+  });
+};
+
+const parse = ({ Date, Volume, AdjClose, ...rest }) => {
   _.forEach(rest, (v, k) => (rest[k] = +v));
   return { Date, ...rest };
 };
 
-const frequentlyMoveCompanies = (src, dest) => {
-  setInterval(() => {
-    const c = src.shift();
-    if (c) dest.push(c);
-    else [src, dest] = [dest, src];
-  }, 2000);
-};
-
-const startVisualization = quotes => {
-  const nextName = (() => {
-    let step = 0;
-    return () => quotes[step++ % quotes.length];
-  })();
-
-  initChart();
-  updateChart(quotes, nextName());
-  setInterval(() => updateChart(quotes, nextName()), 1000);
-  frequentlyMoveCompanies(quotes, []);
-};
-
 const main = () => {
-  d3.csv("data/nifty_50.csv", parseCompany).then(data => {
+  d3.csv("data/nifty_50.csv", parse).then(data => {
     initChart();
-    updateChart(data, "Close");
+    const quotes = insertSME(data);
+    updateChart(quotes, "Close");
+    drawSlider();
   });
 };
 
